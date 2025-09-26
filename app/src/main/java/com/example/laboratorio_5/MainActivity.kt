@@ -5,13 +5,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.laboratorio_5.ui.theme.Laboratorio_5Theme
+import com.example.laboratorio_5.Network.Pokemon
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,11 +21,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Laboratorio_5Theme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    PokemonApp()
                 }
             }
         }
@@ -31,17 +33,31 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+fun PokemonApp() {
+    val navController = rememberNavController()
+    var selectedPokemon by remember { mutableStateOf<Pokemon?>(null) }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Laboratorio_5Theme {
-        Greeting("Android")
+    NavHost(
+        navController = navController,
+        startDestination = "main"
+    ) {
+        composable("main") {
+            MainFragment(
+                onPokemonClick = { pokemon ->
+                    selectedPokemon = pokemon
+                    navController.navigate("detail")
+                }
+            )
+        }
+        composable("detail") {
+            selectedPokemon?.let { pokemon ->
+                DetailFragment(
+                    pokemon = pokemon,
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
     }
 }
