@@ -3,7 +3,6 @@ package com.example.laboratorio_5.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio_5.Network.PokemonDetail
-import com.example.laboratorio_5.Network.RetrofitClient
 import com.example.laboratorio_5.data.repository.PokemonRepository
 import com.example.laboratorio_5.data.repository.PokemonRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +17,7 @@ data class DetailUiState(
 )
 
 class DetailViewModel(
-    private val repository: PokemonRepository = PokemonRepositoryImpl(RetrofitClient.api)
+    private val repository: PokemonRepository = PokemonRepositoryImpl()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -38,7 +37,7 @@ class DetailViewModel(
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = "Error al cargar los detalles: ${error.message}"
+                        errorMessage = error.message ?: "Error desconocido"
                     )
                 }
         }

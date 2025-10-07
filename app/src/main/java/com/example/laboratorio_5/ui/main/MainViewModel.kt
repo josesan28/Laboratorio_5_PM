@@ -3,7 +3,6 @@ package com.example.laboratorio_5.ui.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio_5.Network.Pokemon
-import com.example.laboratorio_5.Network.RetrofitClient
 import com.example.laboratorio_5.data.repository.PokemonRepository
 import com.example.laboratorio_5.data.repository.PokemonRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +17,7 @@ data class MainUiState(
 )
 
 class MainViewModel(
-    private val repository: PokemonRepository = PokemonRepositoryImpl(RetrofitClient.api)
+    private val repository: PokemonRepository = PokemonRepositoryImpl()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -42,7 +41,7 @@ class MainViewModel(
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = "Error al cargar los Pokémon: ${error.message}"
+                        errorMessage = error.message ?: "Error desconocido"
                     )
                 }
         }
