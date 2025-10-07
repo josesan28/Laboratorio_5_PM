@@ -10,32 +10,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import kotlinx.coroutines.launch
 import com.example.laboratorio_5.Network.Pokemon
-import com.example.laboratorio_5.Network.PokemonDetail
-import com.example.laboratorio_5.Network.RetrofitClient
-
-class DetailViewModel : ViewModel() {
-    private val _pokemonDetail = mutableStateOf<PokemonDetail?>(null)
-    val pokemonDetail: State<PokemonDetail?> = _pokemonDetail
-
-    fun loadPokemonDetail(id: Int) {
-        viewModelScope.launch {
-            try {
-                val detail = RetrofitClient.api.getPokemonDetail(id)
-                _pokemonDetail.value = detail
-            } catch (e: Exception) {
-            }
-        }
-    }
-}
+import com.example.laboratorio_5.ui.detail.DetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +26,7 @@ fun DetailFragment(
     onBackClick: () -> Unit,
     viewModel: DetailViewModel = viewModel()
 ) {
-    val pokemonDetail by viewModel.pokemonDetail
+    val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(pokemon.id) {
         viewModel.loadPokemonDetail(pokemon.id)
@@ -73,113 +55,140 @@ fun DetailFragment(
                     containerColor = Color(0xFF6200EA)
                 )
             )
+        },
+        snackbarHost = {
+            uiState.errorMessage?.let { error ->
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    action = {
+                        TextButton(onClick = { viewModel.clearError() }) {
+                            Text("Cerrar")
+                        }
+                    }
+                ) {
+                    Text(error)
+                }
+            }
         }
     ) { paddingValues ->
-        pokemonDetail?.let { detail ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Front",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "Back",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    AsyncImage(
-                        model = detail.sprites.front_default,
-                        contentDescription = "Front normal",
+                uiState.pokemonDetail != null -> {
+                    val detail = uiState.pokemonDetail!!
+                    Column(
                         modifier = Modifier
-                            .size(150.dp)
-                            .weight(1f),
-                        contentScale = ContentScale.Fit
-                    )
-                    AsyncImage(
-                        model = detail.sprites.back_default,
-                        contentDescription = "Back normal",
-                        modifier = Modifier
-                            .size(150.dp)
-                            .weight(1f),
-                        contentScale = ContentScale.Fit
-                    )
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Front",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = "Back",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            AsyncImage(
+                                model = detail.sprites.front_default,
+                                contentDescription = "Front normal",
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .weight(1f),
+                                contentScale = ContentScale.Fit
+                            )
+                            AsyncImage(
+                                model = detail.sprites.back_default,
+                                contentDescription = "Back normal",
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .weight(1f),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Front Shiny",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = "Back Shiny",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            AsyncImage(
+                                model = detail.sprites.front_shiny,
+                                contentDescription = "Front shiny",
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .weight(1f),
+                                contentScale = ContentScale.Fit
+                            )
+                            AsyncImage(
+                                model = detail.sprites.back_shiny,
+                                contentDescription = "Back shiny",
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .weight(1f),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                else -> {
                     Text(
-                        text = "Front Shiny",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "Back Shiny",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    AsyncImage(
-                        model = detail.sprites.front_shiny,
-                        contentDescription = "Front shiny",
-                        modifier = Modifier
-                            .size(150.dp)
-                            .weight(1f),
-                        contentScale = ContentScale.Fit
-                    )
-                    AsyncImage(
-                        model = detail.sprites.back_shiny,
-                        contentDescription = "Back shiny",
-                        modifier = Modifier
-                            .size(150.dp)
-                            .weight(1f),
-                        contentScale = ContentScale.Fit
+                        text = "No se pudieron cargar los detalles",
+                        modifier = Modifier.align(Alignment.Center),
+                        textAlign = TextAlign.Center
                     )
                 }
             }
         }
     }
-}
-
-//Preview sin datos
-
-@Composable
-@Preview
-fun DetailFragmentPreview() {
-    DetailFragment(
-        pokemon = Pokemon("Pikachu", "https://pokeapi.co/api/v2/pokemon/25/"),
-        onBackClick = {}
-    )
 }

@@ -13,36 +13,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import kotlinx.coroutines.launch
 import com.example.laboratorio_5.Network.Pokemon
-import com.example.laboratorio_5.Network.RetrofitClient
-
-class MainViewModel : ViewModel() {
-    private val _pokemonList = mutableStateOf<List<Pokemon>>(emptyList())
-    val pokemonList: State<List<Pokemon>> = _pokemonList
-
-    init {
-        loadPokemonList()
-    }
-
-    private fun loadPokemonList() {
-        viewModelScope.launch {
-            try {
-                val response = RetrofitClient.api.getPokemonList()
-                _pokemonList.value = response.results
-            } catch (e: Exception) {
-                // Handle error
-            }
-        }
-    }
-}
+import com.example.laboratorio_5.ui.main.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +28,7 @@ fun MainFragment(
     onPokemonClick: (Pokemon) -> Unit,
     viewModel: MainViewModel = viewModel()
 ) {
-    val pokemonList by viewModel.pokemonList
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -66,20 +44,55 @@ fun MainFragment(
                     containerColor = Color(0xFF6200EA)
                 )
             )
+        },
+        snackbarHost = {
+            uiState.errorMessage?.let { error ->
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    action = {
+                        TextButton(onClick = { viewModel.clearError() }) {
+                            Text("Cerrar")
+                        }
+                    }
+                ) {
+                    Text(error)
+                }
+            }
         }
     ) { paddingValues ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(pokemonList) { pokemon ->
-                PokemonListItem(
-                    pokemon = pokemon,
-                    onClick = { onPokemonClick(pokemon) }
-                )
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                uiState.pokemonList.isEmpty() && uiState.errorMessage == null -> {
+                    Text(
+                        text = "No hay Pokémon disponibles",
+                        modifier = Modifier.align(Alignment.Center),
+                        textAlign = TextAlign.Center
+                    )
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(uiState.pokemonList) { pokemon ->
+                            PokemonListItem(
+                                pokemon = pokemon,
+                                onClick = { onPokemonClick(pokemon) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -117,8 +130,9 @@ fun PokemonListItem(
 }
 
 @Composable
-
 @Preview
 fun MainFragmentPreview() {
-    MainFragment(onPokemonClick = {})
+    MainFragment(
+        onPokemonClick = {}
+    )
 }
