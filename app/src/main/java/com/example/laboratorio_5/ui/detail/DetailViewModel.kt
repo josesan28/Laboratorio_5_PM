@@ -3,6 +3,9 @@ package com.example.laboratorio_5.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio_5.Network.PokemonDetail
+import com.example.laboratorio_5.Network.RetrofitClient
+import com.example.laboratorio_5.data.repository.PokemonRepository
+import com.example.laboratorio_5.data.repository.PokemonRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +17,10 @@ data class DetailUiState(
     val errorMessage: String? = null
 )
 
-class DetailViewModel : ViewModel() {
+class DetailViewModel(
+    private val repository: PokemonRepository = PokemonRepositoryImpl(RetrofitClient.api)
+) : ViewModel() {
+
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
@@ -22,18 +28,19 @@ class DetailViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            try {
-                val detail = com.example.laboratorio_5.Network.RetrofitClient.api.getPokemonDetail(id)
-                _uiState.value = _uiState.value.copy(
-                    pokemonDetail = detail,
-                    isLoading = false
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error al cargar los detalles: ${e.message}"
-                )
-            }
+            repository.getPokemonDetail(id)
+                .onSuccess { detail ->
+                    _uiState.value = _uiState.value.copy(
+                        pokemonDetail = detail,
+                        isLoading = false
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Error al cargar los detalles: ${error.message}"
+                    )
+                }
         }
     }
 

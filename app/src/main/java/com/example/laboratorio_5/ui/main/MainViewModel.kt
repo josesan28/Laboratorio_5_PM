@@ -3,6 +3,9 @@ package com.example.laboratorio_5.ui.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.laboratorio_5.Network.Pokemon
+import com.example.laboratorio_5.Network.RetrofitClient
+import com.example.laboratorio_5.data.repository.PokemonRepository
+import com.example.laboratorio_5.data.repository.PokemonRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +17,10 @@ data class MainUiState(
     val errorMessage: String? = null
 )
 
-class MainViewModel : ViewModel() {
+class MainViewModel(
+    private val repository: PokemonRepository = PokemonRepositoryImpl(RetrofitClient.api)
+) : ViewModel() {
+
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
@@ -26,18 +32,19 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            try {
-                val response = com.example.laboratorio_5.Network.RetrofitClient.api.getPokemonList()
-                _uiState.value = _uiState.value.copy(
-                    pokemonList = response.results,
-                    isLoading = false
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error al cargar los Pokémon: ${e.message}"
-                )
-            }
+            repository.getPokemonList()
+                .onSuccess { pokemonList ->
+                    _uiState.value = _uiState.value.copy(
+                        pokemonList = pokemonList,
+                        isLoading = false
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Error al cargar los Pokémon: ${error.message}"
+                    )
+                }
         }
     }
 
